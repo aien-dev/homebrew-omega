@@ -1,0 +1,82 @@
+name: brew
+# Installs Homebrew on GitHub's ubuntu-24.04-arm runner, taps this checkout as aien-dev/omega, builds
+# omc from the 408-byte seed and runs `brew test omc`. The control job installs a copy of the formula
+# whose pinned omc sha256 is wrong; that install must fail. A dispatch with control=wrong-omc-hash
+# makes the main install job itself go red on purpose.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      control:
+        description: "none = normal install; wrong-omc-hash must make the install FAIL"
+        type: choice
+        options: [none, wrong-omc-hash]
+        default: none
+permissions:
+  contents: read
+env:
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_ANALYTICS: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+jobs:
+  install:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Homebrew
+        run: |
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo /home/linuxbrew/.linuxbrew/bin >> "$GITHUB_PATH"
+      - name: Tap this checkout as aien-dev/omega
+        env:
+          CONTROL: ${{ inputs.control || 'none' }}
+        run: |
+          set -eu
+          brew --version
+          if [ "$CONTROL" = wrong-omc-hash ]; then
+            sed -i 's/OMC_SHA256 = "2c82/OMC_SHA256 = "3c82/' Formula/omc.rb
+            git -c user.name=ci -c user.email=ci@localhost commit -qam "control: wrong omc sha256"
+          fi
+          git branch -f main HEAD
+          brew tap aien-dev/omega "$GITHUB_WORKSPACE"
+      - name: brew install --build-from-source aien-dev/omega/omc
+        run: brew install --verbose --build-from-source aien-dev/omega/omc
+      - name: brew test omc
+        run: brew test --verbose omc
+      - name: The installed omc compiles from a clean dir
+        run: |
+          set -eu
+          sha256sum "$(brew --prefix)/bin/omc"
+          d=$(mktemp -d); cd "$d"
+          printf 'global out uchar 4\nfn main to int\nput out 0 111\nput out 1 107\nput out 2 10\nw = write 1 out 0 3\nret 0\nend\n' > ok.om
+          omc < ok.om > ok; chmod +x ok; [ "$(./ok)" = ok ]
+      - name: brew audit
+        run: brew audit --formula aien-dev/omega/omc || echo "audit findings above are advisory"
+
+  control:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Homebrew
+        run: |
+          NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo /home/linuxbrew/.linuxbrew/bin >> "$GITHUB_PATH"
+      - name: "Control: formula with a wrong pinned omc sha256 (must FAIL)"
+        run: |
+          set -u
+          mkdir -p ctl/Formula
+          sed 's/OMC_SHA256 = "2c82/OMC_SHA256 = "3c82/' Formula/omc.rb > ctl/Formula/omc.rb
+          cmp -s Formula/omc.rb ctl/Formula/omc.rb && { echo "edit did nothing"; exit 1; }
+          git -C ctl init -q -b main && git -C ctl -c user.name=ci -c user.email=ci@localhost add -A \
+            && git -C ctl -c user.name=ci -c user.email=ci@localhost commit -qm control
+          brew tap aien-dev/omegactl "$PWD/ctl"
+          rc=0; brew install --build-from-source aien-dev/omegactl/omc > ctl.log 2>&1 || rc=$?
+          tail -5 ctl.log
+          [ "$rc" != 0 ] && grep -q 'is not the pinned 3c82' ctl.log || { echo "wrong hash was accepted (rc=$rc)"; exit 1; }
+          echo "brew control failed as required"
