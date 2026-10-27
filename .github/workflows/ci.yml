@@ -42,7 +42,7 @@ jobs:
             sed -i 's/OMC_SHA256 = "2c82/OMC_SHA256 = "3c82/' Formula/omc.rb
             git -c user.name=ci -c user.email=ci@localhost commit -qam "control: wrong omc sha256"
           fi
-          git branch -f main HEAD
+          git checkout -q -B main
           brew tap aien-dev/omega "$GITHUB_WORKSPACE"
       - name: brew install --build-from-source aien-dev/omega/omc
         run: brew install --verbose --build-from-source aien-dev/omega/omc

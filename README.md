@@ -1,10 +1,11 @@
 # homebrew-omega
 
 My Homebrew tap for `omc`, the Omega compiler. The formula does not download a binary. It downloads
-the omega-mv source at a pinned commit and **births `omc` from a 408-byte hand-written seed**
-(`seed0 → hex1 → asm2 → om4 → omc → omc → omc`) with nothing but `sh`, `printf`, `cat`, `stat`, `sed`,
-`sha256sum` and `cmp`. Then it refuses to install unless the result's sha256 is exactly
-`2c82480596bbdc50cda9626866209ef662d5834f278f839ff4ce0250c495029f` (325524 bytes).
+the omega-mv source at a pinned commit and **births `omc` from seed0, a 408-byte hand-written AArch64
+Linux program** (`seed0 → hex1 → asm2 → om4 → omc → omc → omc`) with nothing but `sh`, `printf`, `cat`,
+`stat`, `sed`, `sha256sum` and `cmp`; no C compiler, assembler or linker writes a byte of that chain.
+Then it refuses to install unless the result's sha256 is exactly
+`2c82480596bbdc50cda9626866209ef662d5834f278f839ff4ce0250c495029f` (325,524 bytes).
 
 ```sh
 brew install --build-from-source aien-dev/omega/omc
@@ -14,7 +15,11 @@ brew test omc
 **Honest limits.** This works on **Homebrew on Linux, arm64** only. `omc` runs on and emits code for
 AArch64 Linux; there is no macOS build, and the formula says so (`depends_on :linux`,
 `depends_on arch: :arm64`) instead of failing halfway. The version `0.0.0+git.e5b32567` means "the
-compiler at omega-mv commit `e5b32567`"; omega-mv has not tagged a release yet.
+compiler at omega-mv commit `e5b32567`"; omega-mv has not tagged a release yet. The 408 bytes are
+written as 7,903 bytes of commented hex text, turned into bytes by a 1,048-byte shell script whose
+`printf` is the one outside tool. Matching the pinned hash is a fixed-output reproducibility match along
+one build path from a pinned commit: it is not diverse double compilation, and it does not prove `omc`
+correct.
 
 Try it:
 
