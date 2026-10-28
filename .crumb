@@ -1,12 +1,26 @@
 {
-  "schema_version": "1.0.0",
-  "name": "homebrew-omega",
-  "parent": "aien-dev/omega-mv@e5b32567a7aff3ce594e3254a622a846a6cd190b",
-  "purpose": "Homebrew tap (aien-dev/omega) whose Formula/omc.rb births omc from omega-mv's 408-byte seed at the pinned commit with seed/omega-from-seed.sh and refuses any omc whose sha256 differs from the pinned value; Linux arm64 only.",
-  "layer": "distribution",
+  "extensions": {
+    "generated": {
+      "children": [],
+      "children_root": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compiled_at": "2026-10-28T21:30:12Z",
+      "compiler": "crumb-compile/1",
+      "digest": "sha256:2f40825bde5f0b2a6d4255cd6e8ccc95b675dde487f64efbf4bd23777995277e",
+      "evidence_files": 0,
+      "evidence_root": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "files": 5,
+      "generated_at_commit": "e3d4c93ce107fd0dabb284e4d7c3da1d01cf9baf",
+      "source_tree": "sha256:986fbb21d5995adf9bf60481dec3db8d1a526f7ab98c6eaf109759c8921adf16"
+    }
+  },
   "invariants": [
     "The formula never downloads a prebuilt omc; it builds from the seed and checks the pinned sha256.",
     "Pins match aien-dev/omega-packages pins.env.",
     "The control job must fail to install a formula with a wrong pinned hash; a passing control is a broken workflow."
-  ]
+  ],
+  "layer": "distribution",
+  "name": "homebrew-omega",
+  "parent": "aien-dev/omega-mv@e5b32567a7aff3ce594e3254a622a846a6cd190b",
+  "purpose": "Homebrew tap (aien-dev/omega) whose Formula/omc.rb births omc from omega-mv's 408-byte seed at the pinned commit with seed/omega-from-seed.sh and refuses any omc whose sha256 differs from the pinned value; Linux arm64 only.",
+  "schema_version": "1.0.0"
 }
